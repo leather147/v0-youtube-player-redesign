@@ -2,19 +2,31 @@
 
 import { useRef, useState, useEffect, useCallback } from "react"
 import ProgressBar, { Chapter } from "./ProgressBar"
-import SettingsPanel, { PlayerSettings } from "./SettingsPanel"
+import SettingsPanel, { PlayerSettings, Locale } from "./SettingsPanel"
 import DeadBatteryScreen from "./DeadBatteryScreen"
 
-const DEFAULT_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+// Default: YouTube football skills video, start at 3:08 (188s)
+const DEFAULT_VIDEO = "https://www.youtube.com/watch?v=uOG_KVI7QM8"
+const DEFAULT_START_TIME = 188
+
+function getYouTubeId(url: string): string | null {
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/)
+  return match ? match[1] : null
+}
 
 const SAMPLE_CHAPTERS: Chapter[] = [
-  { time: 0, title: "Introduction" },
-  { time: 30, title: "The Forest Awakens" },
-  { time: 75, title: "Butterfly Chase" },
-  { time: 120, title: "Bunny vs Birds" },
-  { time: 180, title: "The Big Revenge" },
-  { time: 240, title: "Finale" },
+  { time: 0, title: "Вступление" },
+  { time: 30, title: "Базовые финты" },
+  { time: 90, title: "Финты 1 на 1" },
+  { time: 188, title: "Продвинутые приёмы" },
+  { time: 280, title: "Скоростные финты" },
+  { time: 380, title: "Финальные трюки" },
 ]
+
+const T: Record<Locale, { title: string; channel: string }> = {
+  ru: { title: "Лучшие футбольные финты 2024", channel: "Football Skills" },
+  en: { title: "Best Football Skills 2024", channel: "Football Skills" },
+}
 
 function formatTime(s: number) {
   const h = Math.floor(s / 3600)
@@ -62,8 +74,11 @@ export default function YouTubePlayer() {
   const [showFullscreenBtn, setShowFullscreenBtn] = useState(false)
   const [seekFeedback, setSeekFeedback] = useState<{ dir: "left" | "right", sec: number } | null>(null)
   const [showPlayFeedback, setShowPlayFeedback] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [videoSrc, setVideoSrc] = useState(DEFAULT_VIDEO)
+  const [locale, setLocale] = useState<Locale>("ru")
+  const t = T[locale]
+  const ytId = getYouTubeId(videoSrc)
 
   const handleVideoSource = useCallback((src: string) => {
     setVideoSrc(src)
@@ -247,27 +262,39 @@ export default function YouTubePlayer() {
       onClick={handleContainerClick}
       onMouseMove={handleFullscreenMouseMove}
     >
-      {/* Video element */}
-      <video
-        ref={videoRef}
-        src={videoSrc}
-        className="absolute inset-0 w-full h-full object-contain"
-        playsInline
-        preload="metadata"
-        onTimeUpdate={() => {
-          const v = videoRef.current
-          if (!v) return
-          setCurrentTime(v.currentTime)
-          if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1))
-        }}
-        onDurationChange={() => setDuration(videoRef.current?.duration ?? 0)}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onWaiting={() => setIsLoading(true)}
-        onCanPlay={() => setIsLoading(false)}
-        onLoadedData={() => setIsLoading(false)}
-        onEnded={() => { setIsPlaying(false); setShowOverlay(true) }}
-      />
+      {/* Video / YouTube iframe */}
+      {ytId ? (
+        <iframe
+          key={ytId}
+          className="absolute inset-0 w-full h-full border-0"
+          src={`https://www.youtube.com/embed/${ytId}?autoplay=1&start=${DEFAULT_START_TIME}&rel=0&modestbranding=1&controls=0&disablekb=1&fs=0&iv_load_policy=3`}
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowFullScreen
+          title={t.title}
+          onLoad={() => setIsLoading(false)}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          src={videoSrc}
+          className="absolute inset-0 w-full h-full object-contain"
+          playsInline
+          preload="metadata"
+          onTimeUpdate={() => {
+            const v = videoRef.current
+            if (!v) return
+            setCurrentTime(v.currentTime)
+            if (v.buffered.length > 0) setBuffered(v.buffered.end(v.buffered.length - 1))
+          }}
+          onDurationChange={() => setDuration(videoRef.current?.duration ?? 0)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsLoading(true)}
+          onCanPlay={() => setIsLoading(false)}
+          onLoadedData={() => setIsLoading(false)}
+          onEnded={() => { setIsPlaying(false); setShowOverlay(true) }}
+        />
+      )}
 
       {/* Loading spinner */}
       {isLoading && (
@@ -341,6 +368,8 @@ export default function YouTubePlayer() {
           onSettingsChange={setSettings}
           onVideoSource={handleVideoSource}
           onClose={() => setShowSettings(false)}
+          locale={locale}
+          onLocaleChange={setLocale}
         />
       )}
 
@@ -375,8 +404,8 @@ export default function YouTubePlayer() {
               </svg>
             </button>
             <div className="flex-1">
-              <div className="text-white text-sm font-medium leading-tight line-clamp-1">Big Buck Bunny</div>
-              <div className="text-white/60 text-xs">Blender Foundation</div>
+              <div className="text-white text-sm font-medium leading-tight line-clamp-1">{t.title}</div>
+              <div className="text-white/60 text-xs">{t.channel}</div>
             </div>
           </div>
           <div className="flex items-center gap-1">
