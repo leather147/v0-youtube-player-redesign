@@ -102,7 +102,7 @@ export default function YouTubePlayer() {
     autoplay: true,
     loopVideo: false,
     annotationsEnabled: true,
-    deadBatteryTime: 30,
+    deadBatteryTime: 10,
   })
 
   // Auto-hide overlay after 3s
