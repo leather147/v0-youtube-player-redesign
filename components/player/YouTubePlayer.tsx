@@ -190,13 +190,23 @@ export default function YouTubePlayer() {
     setIsMuted(v === 0)
   }, [])
 
+  const [isCssFullscreen, setIsCssFullscreen] = useState(false)
+
   const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
+    // Try the native Fullscreen API first; fall back to a CSS-based fullscreen
+    // when the page is inside an iframe that blocks the Fullscreen API.
+    if (!document.fullscreenElement && !isCssFullscreen) {
+      containerRef.current?.requestFullscreen().catch(() => {
+        setIsCssFullscreen(true)
+        setIsFullscreen(true)
+      })
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
     } else {
-      document.exitFullscreen()
+      setIsCssFullscreen(false)
+      setIsFullscreen(false)
     }
-  }, [])
+  }, [isCssFullscreen])
 
   const toggleLandscape = useCallback(() => setIsLandscape(p => !p), [])
 
@@ -216,7 +226,16 @@ export default function YouTubePlayer() {
     <div
       ref={containerRef}
       className="relative overflow-hidden select-none"
-      style={{
+      style={isCssFullscreen ? {
+        background: "#000",
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 9999,
+        borderRadius: 0,
+        cursor: showOverlay ? "default" : "none",
+      } : {
         background: "#000",
         width: "100%",
         aspectRatio: isLandscape ? "21/9" : "16/9",
@@ -506,16 +525,16 @@ export default function YouTubePlayer() {
 
               {/* Fullscreen */}
               <button
-                className={`p-2 rounded-full hover:bg-white/15 transition-colors ${isFullscreen ? "" : ""}`}
+                className="p-2 rounded-full hover:bg-white/15 transition-colors"
                 style={{
-                  opacity: isFullscreen ? (showFullscreenBtn ? 1 : 0) : 1,
+                  opacity: (isFullscreen || isCssFullscreen) ? (showFullscreenBtn ? 1 : 0) : 1,
                   transition: "opacity 0.3s ease",
-                  pointerEvents: isFullscreen ? (showFullscreenBtn ? "auto" : "none") : "auto"
+                  pointerEvents: (isFullscreen || isCssFullscreen) ? (showFullscreenBtn ? "auto" : "none") : "auto"
                 }}
                 onClick={e => { e.stopPropagation(); toggleFullscreen() }}
                 data-interactive="true"
               >
-                {isFullscreen ? (
+                {(isFullscreen || isCssFullscreen) ? (
                   <svg viewBox="0 0 24 24" fill="white" className="w-5 h-5">
                     <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
                   </svg>
