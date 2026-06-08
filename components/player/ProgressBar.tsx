@@ -164,16 +164,18 @@ export default function ProgressBar({ currentTime, duration, buffered, chapters,
                 style={{ width: `${progress}%`, backgroundColor: "var(--yt-red)", transition: "width 0.1s linear" }}
               />
             )}
-            {/* Thumb */}
+            {/* Thumb — red dot, always vertically centred on the track */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg"
+              className="absolute rounded-full"
               style={{
                 left: `${progress}%`,
+                top: "50%",
                 transform: "translate(-50%, -50%)",
-                width: isHovering || isDragging ? 14 : 0,
-                height: isHovering || isDragging ? 14 : 0,
+                width: isHovering || isDragging ? 14 : 10,
+                height: isHovering || isDragging ? 14 : 10,
+                background: "var(--yt-red)",
                 transition: "width 0.1s, height 0.1s",
-                boxShadow: "0 0 4px rgba(0,0,0,0.5)"
+                boxShadow: "0 0 6px rgba(255,0,0,0.5)"
               }}
             />
           </div>
