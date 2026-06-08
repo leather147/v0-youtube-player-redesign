@@ -92,14 +92,6 @@ export default function DeadBatteryScreen({ onDismiss }: DeadBatteryScreenProps)
         </div>
       </div>
 
-      {/* Tap to continue text */}
-      <div
-        className="absolute bottom-8 text-center"
-        style={{ color: "rgba(255,255,255,0.25)", fontSize: 12 }}
-      >
-        Tap to continue
-      </div>
-
       <style>{`
         @keyframes pulse-ring {
           0% { transform: scale(0.95); opacity: 0.8; }
