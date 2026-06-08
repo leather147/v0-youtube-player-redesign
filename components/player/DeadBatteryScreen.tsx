@@ -27,8 +27,8 @@ export default function DeadBatteryScreen({ onDismiss }: DeadBatteryScreenProps)
           <div
             className="absolute rounded-full border-2"
             style={{
-              width: 140,
-              height: 140,
+              width: 210,
+              height: 210,
               borderColor: "rgba(255,0,0,0.2)",
               animation: "pulse-ring 2s ease-out infinite"
             }}
@@ -37,15 +37,15 @@ export default function DeadBatteryScreen({ onDismiss }: DeadBatteryScreenProps)
           <div
             className="relative flex items-center justify-center rounded-full"
             style={{
-              width: 120,
-              height: 120,
+              width: 210,
+              height: 210,
               border: "3px solid #ff0000",
               background: "rgba(255,0,0,0.04)",
               boxShadow: "0 0 30px rgba(255,0,0,0.25), inset 0 0 20px rgba(255,0,0,0.05)"
             }}
           >
             {/* Lightning bolt */}
-            <svg viewBox="0 0 40 60" width="36" height="54" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 40 60" width="54" height="81" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M24 2L4 34h14L14 58L36 24H22L24 2Z"
                 fill="#ff0000"
@@ -61,8 +61,8 @@ export default function DeadBatteryScreen({ onDismiss }: DeadBatteryScreenProps)
         <div style={{ marginTop: 48 }}>
           <svg
             viewBox="0 0 80 130"
-            width="72"
-            height="117"
+            width="108"
+            height="176"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
