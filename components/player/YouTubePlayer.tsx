@@ -5,7 +5,7 @@ import ProgressBar, { Chapter } from "./ProgressBar"
 import SettingsPanel, { PlayerSettings } from "./SettingsPanel"
 import DeadBatteryScreen from "./DeadBatteryScreen"
 
-const SAMPLE_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+const DEFAULT_VIDEO = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
 
 const SAMPLE_CHAPTERS: Chapter[] = [
   { time: 0, title: "Introduction" },
@@ -63,6 +63,22 @@ export default function YouTubePlayer() {
   const [seekFeedback, setSeekFeedback] = useState<{ dir: "left" | "right", sec: number } | null>(null)
   const [showPlayFeedback, setShowPlayFeedback] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [videoSrc, setVideoSrc] = useState(DEFAULT_VIDEO)
+
+  const handleVideoSource = useCallback((src: string) => {
+    setVideoSrc(src)
+    setCurrentTime(0)
+    setDuration(0)
+    setBuffered(0)
+    setIsPlaying(false)
+    setIsLoading(true)
+    // Small delay so React re-renders the new src before we try to play
+    setTimeout(() => {
+      const v = videoRef.current
+      if (!v) return
+      v.load()
+    }, 50)
+  }, [])
 
   const [settings, setSettings] = useState<PlayerSettings>({
     quality: "Auto",
@@ -215,7 +231,7 @@ export default function YouTubePlayer() {
       {/* Video element */}
       <video
         ref={videoRef}
-        src={SAMPLE_VIDEO}
+        src={videoSrc}
         className="absolute inset-0 w-full h-full object-contain"
         playsInline
         preload="metadata"
@@ -304,6 +320,7 @@ export default function YouTubePlayer() {
         <SettingsPanel
           settings={settings}
           onSettingsChange={setSettings}
+          onVideoSource={handleVideoSource}
           onClose={() => setShowSettings(false)}
         />
       )}

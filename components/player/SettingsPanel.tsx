@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { X, ChevronRight, Check } from "lucide-react"
 
 export interface PlayerSettings {
@@ -16,16 +16,52 @@ export interface PlayerSettings {
 interface SettingsPanelProps {
   settings: PlayerSettings
   onSettingsChange: (s: PlayerSettings) => void
+  onVideoSource: (src: string) => void
   onClose: () => void
 }
 
-type Panel = "main" | "quality" | "speed" | "deadBattery"
+type Panel = "main" | "quality" | "speed" | "deadBattery" | "openUrl"
 
 const QUALITIES = ["Auto", "2160p", "1440p", "1080p", "720p", "480p", "360p", "240p", "144p"]
 const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
 
-export default function SettingsPanel({ settings, onSettingsChange, onClose }: SettingsPanelProps) {
+export default function SettingsPanel({ settings, onSettingsChange, onVideoSource, onClose }: SettingsPanelProps) {
   const [panel, setPanel] = useState<Panel>("main")
+  const [urlInput, setUrlInput] = useState("")
+  const [urlError, setUrlError] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileOpen = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const objectUrl = URL.createObjectURL(file)
+    onVideoSource(objectUrl)
+    onClose()
+    // Reset so same file can be picked again
+    e.target.value = ""
+  }
+
+  const handleUrlSubmit = () => {
+    const trimmed = urlInput.trim()
+    if (!trimmed) {
+      setUrlError("Please enter a URL")
+      return
+    }
+    try {
+      new URL(trimmed)
+    } catch {
+      setUrlError("Invalid URL format")
+      return
+    }
+    onVideoSource(trimmed)
+    setUrlInput("")
+    setUrlError("")
+    onClose()
+  }
 
   const set = (partial: Partial<PlayerSettings>) =>
     onSettingsChange({ ...settings, ...partial })
@@ -38,6 +74,14 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose }: S
       style={{ background: "#212121" }}
       onClick={handlePanelClick}
     >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         {panel !== "main" ? (
@@ -49,7 +93,11 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose }: S
               <path d="M9 18l6-6-6-6" />
             </svg>
             <span className="text-sm font-medium">
-              {panel === "quality" ? "Quality" : panel === "speed" ? "Playback speed" : "Dead battery time"}
+              {panel === "quality" ? "Quality"
+                : panel === "speed" ? "Playback speed"
+                : panel === "deadBattery" ? "Dead battery time"
+                : panel === "openUrl" ? "Open by URL"
+                : ""}
             </span>
           </button>
         ) : (
@@ -178,6 +226,36 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose }: S
           {/* Divider */}
           <div className="border-t border-white/10 my-2" />
 
+          {/* Open from device */}
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors"
+            onClick={handleFileOpen}
+          >
+            <svg className="w-5 h-5 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+              <path d="M12 11v6M9 14l3-3 3 3" />
+            </svg>
+            <span className="text-white text-sm">Open from device</span>
+          </button>
+
+          {/* Open by URL */}
+          <button
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
+            onClick={() => setPanel("openUrl")}
+          >
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20" />
+              </svg>
+              <span className="text-white text-sm">Open by URL</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-white/40" />
+          </button>
+
+          {/* Second divider */}
+          <div className="border-t border-white/10 my-2" />
+
           {/* Report */}
           <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
             <svg className="w-5 h-5 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -254,6 +332,39 @@ export default function SettingsPanel({ settings, onSettingsChange, onClose }: S
               {settings.deadBatteryTime === t && <Check className="w-4 h-4 text-[#ff0000]" />}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Open by URL panel */}
+      {panel === "openUrl" && (
+        <div className="p-4 flex flex-col gap-3">
+          <p className="text-white/60 text-xs leading-relaxed">
+            Paste a direct link to a video file (mp4, webm, ogg, etc.)
+          </p>
+          <div className="flex flex-col gap-1">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={e => { setUrlInput(e.target.value); setUrlError("") }}
+              onKeyDown={e => { if (e.key === "Enter") handleUrlSubmit() }}
+              placeholder="https://example.com/video.mp4"
+              className="w-full rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:ring-1 focus:ring-[#ff0000] border border-white/10"
+              style={{ background: "#2d2d2d" }}
+              autoFocus
+            />
+            {urlError && (
+              <span className="text-[#ff4444] text-xs">{urlError}</span>
+            )}
+          </div>
+          <button
+            className="w-full rounded-lg py-2 text-sm font-semibold text-white transition-colors"
+            style={{ background: "#ff0000" }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#cc0000")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#ff0000")}
+            onClick={handleUrlSubmit}
+          >
+            Open video
+          </button>
         </div>
       )}
     </div>
