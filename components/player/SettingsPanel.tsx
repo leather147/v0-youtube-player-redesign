@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { X, ChevronRight, Check } from "lucide-react"
+import { X, ChevronRight } from "lucide-react"
 
 export interface PlayerSettings {
   quality: string
@@ -30,6 +30,34 @@ export default function SettingsPanel({ settings, onSettingsChange, onVideoSourc
   const [urlInput, setUrlInput] = useState("")
   const [urlError, setUrlError] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Dead battery time input state — initialised from current settings
+  const initMins = Math.floor(settings.deadBatteryTime / 60)
+  const initSecs = settings.deadBatteryTime % 60
+  const [dbMinutes, setDbMinutes] = useState(String(initMins))
+  const [dbSeconds, setDbSeconds] = useState(String(initSecs))
+  const [dbError, setDbError] = useState("")
+
+  const handleDbApply = () => {
+    const mins = parseInt(dbMinutes || "0", 10)
+    const secs = parseInt(dbSeconds || "0", 10)
+    if (isNaN(mins) || isNaN(secs) || mins < 0 || secs < 0 || secs > 59) {
+      setDbError("Enter valid time (seconds 0–59)")
+      return
+    }
+    const total = mins * 60 + secs
+    setDbError("")
+    set({ deadBatteryTime: total })
+    setPanel("main")
+  }
+
+  const handleDbDisable = () => {
+    setDbMinutes("0")
+    setDbSeconds("0")
+    setDbError("")
+    set({ deadBatteryTime: 0 })
+    setPanel("main")
+  }
 
   const handleFileOpen = () => {
     fileInputRef.current?.click()
@@ -321,17 +349,77 @@ export default function SettingsPanel({ settings, onSettingsChange, onVideoSourc
 
       {/* Dead battery time panel */}
       {panel === "deadBattery" && (
-        <div className="py-2">
-          {[0, 10, 20, 30, 60, 90, 120, 180, 300].map((t) => (
+        <div className="p-4 flex flex-col gap-4">
+          <p className="text-white/60 text-xs leading-relaxed">
+            Set the exact time after which the dead battery screen appears. Set both to 0 to disable.
+          </p>
+
+          {/* Current value badge */}
+          <div className="flex items-center gap-2">
+            <span className="text-white/40 text-xs">Current:</span>
+            <span className="text-white/80 text-xs font-mono">
+              {settings.deadBatteryTime === 0
+                ? "Disabled"
+                : `${Math.floor(settings.deadBatteryTime / 60)}m ${settings.deadBatteryTime % 60}s`}
+            </span>
+          </div>
+
+          {/* Minutes + Seconds inputs */}
+          <div className="flex items-end gap-3">
+            {/* Minutes */}
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-white/50 text-xs">Minutes</label>
+              <input
+                type="number"
+                min={0}
+                value={dbMinutes}
+                onChange={e => { setDbMinutes(e.target.value); setDbError("") }}
+                onKeyDown={e => { if (e.key === "Enter") handleDbApply() }}
+                className="w-full rounded-lg px-3 py-2 text-sm text-white text-center font-mono outline-none focus:ring-1 focus:ring-[#ff0000] border border-white/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                style={{ background: "#2d2d2d" }}
+                placeholder="0"
+              />
+            </div>
+
+            <span className="text-white/40 text-lg font-bold pb-2">:</span>
+
+            {/* Seconds */}
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-white/50 text-xs">Seconds</label>
+              <input
+                type="number"
+                min={0}
+                max={59}
+                value={dbSeconds}
+                onChange={e => { setDbSeconds(e.target.value); setDbError("") }}
+                onKeyDown={e => { if (e.key === "Enter") handleDbApply() }}
+                className="w-full rounded-lg px-3 py-2 text-sm text-white text-center font-mono outline-none focus:ring-1 focus:ring-[#ff0000] border border-white/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                style={{ background: "#2d2d2d" }}
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          {dbError && <span className="text-[#ff4444] text-xs">{dbError}</span>}
+
+          {/* Actions */}
+          <div className="flex gap-2">
             <button
-              key={t}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
-              onClick={() => { set({ deadBatteryTime: t }); setPanel("main") }}
+              className="flex-1 rounded-lg py-2 text-sm font-semibold text-white/60 border border-white/10 hover:bg-white/10 transition-colors"
+              onClick={handleDbDisable}
             >
-              <span className="text-white text-sm">{t === 0 ? "Disabled" : `After ${t} seconds`}</span>
-              {settings.deadBatteryTime === t && <Check className="w-4 h-4 text-[#ff0000]" />}
+              Disable
             </button>
-          ))}
+            <button
+              className="flex-1 rounded-lg py-2 text-sm font-semibold text-white transition-colors"
+              style={{ background: "#ff0000" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#cc0000")}
+              onMouseLeave={e => (e.currentTarget.style.background = "#ff0000")}
+              onClick={handleDbApply}
+            >
+              Apply
+            </button>
+          </div>
         </div>
       )}
 
